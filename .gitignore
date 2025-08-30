@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# API Keys - NEVER commit these!
+.env
+config.ini
+secrets.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+async_order_executor.py
