@@ -1,0 +1,134 @@
+import asyncio
+import json
+import websockets
+from protogenerated.PushDataV3ApiWrapper_pb2 import PushDataV3ApiWrapper
+from orderbook import OrderBook
+from marketmaker import MarketMaker
+
+class DeltaVersionStatus:
+    VALID = "Valid"
+    OUTDATED = "Outdated"
+    GAP_DETECTED = "GapDetected"
+    NOT_SEQUENTIAL = "NotSequential"
+
+class WebSocketClient:
+    def __init__(self, order_book: OrderBook, market_maker: MarketMaker, symbol: str):
+        self.order_book = order_book
+        self.market_maker = market_maker
+        self.symbol = symbol.lower()
+        self.websocket = None
+        self.needs_resync = False
+        self.is_initialized = False
+
+    async def connect(self):
+        url = "wss://wbs-api.mexc.com/ws"
+        try:
+            self.websocket = await websockets.connect(url, ssl=True)
+            print("✅ Connection established")
+            # Subscription optional manuell aufrufen
+        except Exception as e:
+            print("❌ Failed to connect:", e)
+            self.websocket = None
+            return False
+        return True
+
+    async def send_subscription(self):
+        if not self.websocket:
+            print("⚠️ No active websocket connection")
+            return
+
+        sub_msg = {
+            "method": "SUBSCRIPTION",
+            "params": [f"spot@public.aggre.depth.v3.api.pb@10ms@{self.symbol}"]
+        }
+
+        await self.websocket.send(json.dumps(sub_msg))
+        print("📩 Subscribed:", sub_msg)
+
+    async def get_order_book_snapshot(self):
+        """ Holt das REST-Snapshot-Orderbook (Resync) """
+        import aiohttp
+
+        url = f"https://api.mexc.com/api/v3/depth?symbol={self.symbol}&limit=10"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    print("❌ Failed to fetch snapshot", resp.status)
+                    return
+                data = await resp.json()
+
+        self.order_book.clear()
+        for bid in data.get("bids", []):
+            self.order_book.update_bid(float(bid[0]), float(bid[1]))
+        for ask in data.get("asks", []):
+            self.order_book.update_ask(float(ask[0]), float(ask[1]))
+
+        self.order_book.set_version(int(data["lastUpdateId"]))
+        self.is_initialized = True
+        self.needs_resync = False
+        print("🟢 Snapshot loaded, lastUpdateId =", data["lastUpdateId"])
+
+    def get_delta_version_status(self, from_version: int, to_version: int):
+        current = self.order_book.get_version()
+        if to_version < current:
+            return DeltaVersionStatus.OUTDATED
+        if from_version > current + 1:
+            return DeltaVersionStatus.GAP_DETECTED
+        if from_version != current + 1:
+            return DeltaVersionStatus.NOT_SEQUENTIAL
+        return DeltaVersionStatus.VALID
+
+    async def handle_binary_delta(self, message: bytes):
+        if self.needs_resync:
+            return
+
+        data = PushDataV3ApiWrapper()
+        if not data.ParseFromString(message) or not data.HasField("publicaggredepths"):
+            return
+
+        depth = data.publicaggredepths
+        if not depth.bids and not depth.asks:
+            return
+
+        from_version = int(depth.fromversion)
+        to_version = int(depth.toversion)
+        status = self.get_delta_version_status(from_version, to_version)
+
+        if status in (DeltaVersionStatus.GAP_DETECTED, DeltaVersionStatus.NOT_SEQUENTIAL):
+            print("⚠️ Delta gap detected, scheduling resync")
+            self.needs_resync = True
+            return
+
+        # Bids & Asks anwenden
+        for bid in depth.bids:
+            self.order_book.update_bid(float(bid.price), float(bid.quantity))
+        for ask in depth.asks:
+            self.order_book.update_ask(float(ask.price), float(ask.quantity))
+
+        self.order_book.set_version(to_version)
+        self.market_maker.on_order_book_update()
+
+    async def handle_text_message(self, message: str):
+        print("💬 Text message:", message)
+
+    async def handle_received_data(self, message):
+        # websockets liefert immer str oder bytes
+        if isinstance(message, bytes):
+            await self.handle_binary_delta(message)
+        else:
+            await self.handle_text_message(message)
+
+    async def run_loop(self):
+        while True:
+            if self.needs_resync:
+                print("🔄 Resync needed")
+                await self.get_order_book_snapshot()
+
+            try:
+                msg = await self.websocket.recv()
+                await self.handle_received_data(msg)
+            except websockets.exceptions.ConnectionClosed:
+                print("❌ WebSocket closed, reconnecting...")
+                await asyncio.sleep(1)
+                await self.connect()
+                await self.send_subscription()

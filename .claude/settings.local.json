@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/mnt/c/users/amira/source/repos/Liquid307/**)",
+      "Read(/mnt/c/users/amira/source/repos/Liquid307/Liquid307/**)",
+      "Read(/mnt/c/users/amira/source/repos/Liquid307/Liquid307/**)",
+      "Read(/mnt/c/users/amira/source/repos/Liquid307/Liquid307/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
