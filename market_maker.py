@@ -3,7 +3,6 @@ from typing import Optional
 from dataclasses import dataclass
 import time
 from order_executor import OrderExecutor
-from pnl_tracker import PnLTracker
 
 @dataclass
 class PendingOrder:
@@ -25,8 +24,6 @@ class MarketMaker:
         self.sell_lock = asyncio.Lock()
         self.tick_size = 0.000001
         self.order_quantity = 16
-        self.pnl_tracker = PnLTracker()
-        self.last_pnl_print = time.time()
 
     async def on_orderbook_update(self):
         if self.get_best_bid() == 0 or self.get_best_ask() == 0:
@@ -34,12 +31,6 @@ class MarketMaker:
 
         asyncio.create_task(self.handle_buy())
         asyncio.create_task(self.handle_sell())
-        
-        # Print PnL stats every 30 seconds
-        if time.time() - self.last_pnl_print > 30:
-            mid_price = (self.get_best_bid() + self.get_best_ask()) / 2
-            self.pnl_tracker.print_stats(mid_price)
-            self.last_pnl_print = time.time()
 
     async def handle_buy(self):
         async with self.buy_lock:
@@ -85,14 +76,6 @@ class MarketMaker:
             if status.success:
                 if status.status in ["FILLED", "CANCELED"]:
                     print(f"Buy order {self.current_buy.order_id} is {status.status}")
-                    if status.status == "FILLED":
-                        # Record the trade in PnL tracker
-                        self.pnl_tracker.add_trade(
-                            self.current_buy.order_id,
-                            "BUY",
-                            self.current_buy.price,
-                            self.current_buy.quantity
-                        )
                     self.current_buy = None
                 elif self.should_cancel_current_buy():
                     print(f"Cancelling buy order: {self.current_buy.order_id}")
@@ -109,14 +92,6 @@ class MarketMaker:
             if status.success:
                 if status.status in ["FILLED", "CANCELED"]:
                     print(f"Sell order {self.current_sell.order_id} is {status.status}")
-                    if status.status == "FILLED":
-                        # Record the trade in PnL tracker
-                        self.pnl_tracker.add_trade(
-                            self.current_sell.order_id,
-                            "SELL",
-                            self.current_sell.price,
-                            self.current_sell.quantity
-                        )
                     self.current_sell = None
                 elif self.should_cancel_current_sell():
                     print(f"Cancelling sell order: {self.current_sell.order_id}")
