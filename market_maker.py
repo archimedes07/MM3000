@@ -19,25 +19,44 @@ class MarketMaker:
         self.order_executor = OrderExecutor("mx0vglIZOoLYMTFKD6", "f319935c8e2242beb14854c3d12a849f")
         self.current_buy: Optional[PendingOrder] = None
         self.current_sell: Optional[PendingOrder] = None
-        self.lock = asyncio.Lock()
+        self.buy_lock = asyncio.Lock()
+        self.sell_lock = asyncio.Lock()
         self.tick_size = 0.00001
         self.order_quantity = 0.4
 
     async def on_orderbook_update(self):
-        async with self.lock:
-            if self.get_best_bid() == 0 or self.get_best_ask() == 0:
-                return
+        print("Test")
+        if self.get_best_bid() == 0 or self.get_best_ask() == 0:
+            return
 
+        asyncio.create_task(self.handle_buy())
+        asyncio.create_task(self.handle_sell())
+
+    async def handle_buy(self):
+        async with self.buy_lock:
             await self.check_current_buy_order()
-            #await self.check_current_sell_order()
             await self.place_new_buy_order_if_needed()
-            #await self.place_new_sell_order_if_needed()
+
+    async def handle_sell(self):
+        async with self.sell_lock:
+            await self.check_current_sell_order()
+            await self.place_new_sell_order_if_needed()
 
     def get_best_bid(self):
         return self.orderbook.get_best_bid()
 
     def get_best_ask(self):
         return self.orderbook.get_best_ask()
+
+    def is_only_one_at_current_bid_level(self):
+        if not self.current_buy:
+            return False
+        return self.orderbook.get_bid_quantity(self.current_buy.price) == self.current_buy.quantity
+
+    def is_only_one_at_current_ask_level(self):
+        if not self.current_sell:
+            return False
+        return self.orderbook.get_bid_quantity(self.current_sell.price) == self.current_sell.quantity
 
     async def check_current_buy_order(self):
         if self.current_buy and self.current_buy.order_id:
