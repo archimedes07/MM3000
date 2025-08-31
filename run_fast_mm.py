@@ -38,7 +38,7 @@ RECOMMENDED_PAIRS = {
 
 async def main():
     # CHANGE THIS TO YOUR PREFERRED PAIR
-    SYMBOL = "TURBOUSDT"  # Start with TURBO - high volume meme coin
+    SYMBOL = "WOJAKUSDT"  # WOJAK has wider spreads, less competition
     
     config = RECOMMENDED_PAIRS.get(SYMBOL, {
         "tick_size": 0.000001,
