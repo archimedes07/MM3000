@@ -11,6 +11,7 @@ class PendingOrder:
     price: float = 0.0
     quantity: float = 0.0
     placed_time: float = 0.0
+    is_pending: bool = False
 
 class MarketMaker:
     def __init__(self, orderbook, symbol):
@@ -96,33 +97,46 @@ class MarketMaker:
                         self.current_sell = None
 
     async def place_new_buy_order_if_needed(self):
-        if not self.current_buy:
+        if not self.current_buy or (self.current_buy and not self.current_buy.order_id and not self.current_buy.is_pending):
             buy_price = self.get_best_bid()
+
+            self.current_buy = PendingOrder(
+                side="BUY",
+                price=buy_price,
+                quantity=self.order_quantity,
+                placed_time=time.time(),
+                is_pending=True
+            )
+
             resp = await self.order_executor.place_buy_limit_order(self.symbol, buy_price, self.order_quantity)
+
             if resp.success:
-                self.current_buy = PendingOrder(
-                    order_id=resp.order_id,
-                    side="BUY",
-                    price=buy_price,
-                    quantity=self.order_quantity,
-                    placed_time=time.time()
-                )
+                self.current_buy.order_id = resp.order_id
+                self.current_buy.is_pending = False  # No longer pending
                 print(f"Placed buy order: {resp.order_id} @ {buy_price}")
             else:
                 print(f"Failed to place buy order: {resp.error_message}")
+                self.current_buy = None  # Reset on failure
 
     async def place_new_sell_order_if_needed(self):
-        if not self.current_sell:
+        if not self.current_sell or (
+                self.current_sell and not self.current_sell.order_id and not self.current_sell.is_pending):
             sell_price = self.get_best_ask()
+
+            self.current_sell = PendingOrder(
+                side="SELL",
+                price=sell_price,
+                quantity=self.order_quantity,
+                placed_time=time.time(),
+                is_pending=True
+            )
+
             resp = await self.order_executor.place_sell_limit_order(self.symbol, sell_price, self.order_quantity)
+
             if resp.success:
-                self.current_sell = PendingOrder(
-                    order_id=resp.order_id,
-                    side="SELL",
-                    price=sell_price,
-                    quantity=self.order_quantity,
-                    placed_time=time.time()
-                )
+                self.current_sell.order_id = resp.order_id
+                self.current_sell.is_pending = False  # No longer pending
                 print(f"Placed sell order: {resp.order_id} @ {sell_price}")
             else:
                 print(f"Failed to place sell order: {resp.error_message}")
+                self.current_sell = None  # Reset on failure
