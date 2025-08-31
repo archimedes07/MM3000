@@ -59,12 +59,14 @@ class MarketMaker:
 
     def should_cancel_current_buy(self):
         distance_to_second_bid = self.get_best_bid() - self.orderbook.get_second_best_bid()
+        print("dist2: " + distance_to_second_bid)
         if distance_to_second_bid > self.tick_size:
             return True
         return self.current_buy.price != self.get_best_bid()
 
     def should_cancel_current_sell(self):
         distance_to_second_ask = self.orderbook.get_second_best_ask() - self.get_best_ask()
+        print("dist1: " + distance_to_second_ask)
         if distance_to_second_ask > self.tick_size:
             return True
         return self.current_sell.price != self.get_best_ask()
