@@ -50,3 +50,21 @@ class OrderBook:
     def clear(self):
         self.bids.clear()
         self.asks.clear()
+    
+    def get_spread(self) -> float:
+        """Calculate the spread between best ask and best bid"""
+        best_bid = self.get_best_bid()
+        best_ask = self.get_best_ask()
+        if best_bid == 0 or best_ask == 0:
+            return 0.0
+        return best_ask - best_bid
+    
+    def get_spread_percentage(self) -> float:
+        """Calculate the spread as a percentage of the mid price"""
+        best_bid = self.get_best_bid()
+        best_ask = self.get_best_ask()
+        if best_bid == 0 or best_ask == 0:
+            return 0.0
+        mid_price = (best_bid + best_ask) / 2
+        spread = best_ask - best_bid
+        return (spread / mid_price) * 100
