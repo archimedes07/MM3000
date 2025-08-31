@@ -29,7 +29,7 @@ class MarketMaker:
             return
 
         asyncio.create_task(self.handle_buy())
-        asyncio.create_task(self.handle_sell())
+        #asyncio.create_task(self.handle_sell())
 
     async def handle_buy(self):
         async with self.buy_lock:
