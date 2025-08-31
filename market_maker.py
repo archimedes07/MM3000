@@ -25,7 +25,6 @@ class MarketMaker:
         self.order_quantity = 0.4
 
     async def on_orderbook_update(self):
-        print("Test")
         if self.get_best_bid() == 0 or self.get_best_ask() == 0:
             return
 
