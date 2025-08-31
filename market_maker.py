@@ -23,7 +23,7 @@ class MarketMaker:
         self.current_sell: Optional[PendingOrder] = None
         self.buy_lock = asyncio.Lock()
         self.sell_lock = asyncio.Lock()
-        self.tick_size = 0.00001
+        self.tick_size = 0.000001
         self.order_quantity = 0.4
         self.pnl_tracker = PnLTracker()
         self.last_pnl_print = time.time()
@@ -68,13 +68,13 @@ class MarketMaker:
         return self.orderbook.get_bid_quantity(self.current_sell.price) == self.current_sell.quantity
 
     def should_cancel_current_buy(self):
-        distance_to_second_bid = round(self.get_best_bid() - self.orderbook.get_second_best_bid(), 5)
+        distance_to_second_bid = round(self.get_best_bid() - self.orderbook.get_second_best_bid(), 6)
         if self.is_only_one_at_current_bid_level() and distance_to_second_bid > self.tick_size:
             return True
         return self.current_buy.price != self.get_best_bid()
 
     def should_cancel_current_sell(self):
-        distance_to_second_ask = round(self.orderbook.get_second_best_ask() - self.get_best_ask(), 5)
+        distance_to_second_ask = round(self.orderbook.get_second_best_ask() - self.get_best_ask(), 6)
         if self.is_only_one_at_current_ask_level() and distance_to_second_ask > self.tick_size:
             return True
         return self.current_sell.price != self.get_best_ask()

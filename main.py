@@ -9,7 +9,7 @@ from market_maker import MarketMaker
 
 async def main():
     order_book = OrderBook()
-    market_maker = MarketMaker(order_book, "XRPUSDT")
+    market_maker = MarketMaker(order_book, "LAUNCHCOINUSDT")
 
     async def orderbook_update_handler(update):
         for price, qty in update["bids"]:
@@ -25,7 +25,7 @@ async def main():
         for price, qty in snapshot["asks"]:
             order_book.update_ask(price, qty)
 
-    client = WebSocketClient("XRPUSDT")
+    client = WebSocketClient("LAUNCHCOINUSDT")
     client.set_orderbook_update_callback(orderbook_update_handler)
     client.set_orderbook_snapshot_callback(orderbook_snapshot_handler)
 
