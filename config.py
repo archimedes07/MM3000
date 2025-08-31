@@ -2,8 +2,8 @@ class MarketMakerConfig:
     """Configuration for the market maker strategy"""
     
     # Order parameters
-    ORDER_QUANTITY = 16
-    TICK_SIZE = 0.000001
+    ORDER_QUANTITY = 4
+    TICK_SIZE = 0.0001
     
     # Spread strategy
     SPREAD_TICKS = 2  # Number of ticks for spread (2 = 0.000002)
