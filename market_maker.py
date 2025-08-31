@@ -71,7 +71,7 @@ class MarketMaker:
         return self.current_sell.price != self.get_best_ask()
 
     async def check_current_buy_order(self):
-        if self.current_buy and self.current_buy.order_id:
+        if self.current_buy and self.current_buy.order_id and not self.current_buy.is_pending:
             status = await self.order_executor.get_order_status(self.symbol, self.current_buy.order_id)
             if status.success:
                 if status.status in ["FILLED", "CANCELED"]:
@@ -79,12 +79,15 @@ class MarketMaker:
                     self.current_buy = None
                 elif self.should_cancel_current_buy():
                     print(f"Cancelling buy order: {self.current_buy.order_id}")
+                    self.current_buy.is_pending = True  # Mark as pending BEFORE cancel
                     cancel_resp = await self.order_executor.cancel_order(self.symbol, self.current_buy.order_id)
                     if cancel_resp.success:
                         self.current_buy = None
+                    else:
+                        self.current_buy.is_pending = False  # Reset if cancel failed
 
     async def check_current_sell_order(self):
-        if self.current_sell and self.current_sell.order_id:
+        if self.current_sell and self.current_sell.order_id and not self.current_sell.is_pending:
             status = await self.order_executor.get_order_status(self.symbol, self.current_sell.order_id)
             if status.success:
                 if status.status in ["FILLED", "CANCELED"]:
@@ -92,9 +95,12 @@ class MarketMaker:
                     self.current_sell = None
                 elif self.should_cancel_current_sell():
                     print(f"Cancelling sell order: {self.current_sell.order_id}")
+                    self.current_sell.is_pending = True  # Mark as pending BEFORE cancel
                     cancel_resp = await self.order_executor.cancel_order(self.symbol, self.current_sell.order_id)
                     if cancel_resp.success:
                         self.current_sell = None
+                    else:
+                        self.current_sell.is_pending = False  # Reset if cancel failed
 
     async def place_new_buy_order_if_needed(self):
         if not self.current_buy or (self.current_buy and not self.current_buy.order_id and not self.current_buy.is_pending):
