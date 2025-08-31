@@ -140,7 +140,7 @@ class FastMarketMaker:
         # Place new order with random size variation
         quantity = self.base_quantity
         if self.use_randomization:
-            quantity = int(quantity * random.uniform(0.8, 1.2))
+            quantity = int(quantity * random.uniform(0.9, 1.3))  # Changed from 0.8-1.2 to avoid going below $1
             
         resp = await self.order_executor.place_buy_limit_order(self.symbol, target_price, quantity)
         
@@ -173,7 +173,7 @@ class FastMarketMaker:
         # Place new order with random size variation
         quantity = self.base_quantity
         if self.use_randomization:
-            quantity = int(quantity * random.uniform(0.8, 1.2))
+            quantity = int(quantity * random.uniform(0.9, 1.3))  # Changed from 0.8-1.2 to avoid going below $1
             
         resp = await self.order_executor.place_sell_limit_order(self.symbol, target_price, quantity)
         

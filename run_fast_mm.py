@@ -11,26 +11,26 @@ from fast_market_maker import FastMarketMaker
 # OPTIMAL PAIRS FOR MEXC (in order of recommendation)
 RECOMMENDED_PAIRS = {
     "TURBOUSDT": {
-        "tick_size": 0.000001,  # For price ~0.004, tick is 0.000001
-        "base_quantity": 10000,  # TURBO is cheap, need more units
+        "tick_size": 0.000001,  # For price ~0.004
+        "base_quantity": 300,  # 300 * 0.004 = $1.20 (above minimum)
         "min_spread_bps": 10,
         "target_spread_bps": 25
     },
     "1000SATSUSDT": {
-        "tick_size": 0.00001,
-        "base_quantity": 1000,
+        "tick_size": 0.00001,  # Price ~0.0003
+        "base_quantity": 4000,  # 4000 * 0.0003 = $1.20 
         "min_spread_bps": 15,
         "target_spread_bps": 30
     },
     "MOODENGUSDT": {
-        "tick_size": 0.00001,  # Adjusted for typical MOODENG price
-        "base_quantity": 100,
+        "tick_size": 0.00001,  # Price varies
+        "base_quantity": 10,  # Adjust based on actual price
         "min_spread_bps": 20,
         "target_spread_bps": 40
     },
     "WOJAKUSDT": {
-        "tick_size": 0.000001,
-        "base_quantity": 5000,
+        "tick_size": 0.00000001,  # For price ~0.00033
+        "base_quantity": 3500,  # 3500 * 0.00033 = $1.15 (above minimum)
         "min_spread_bps": 25,
         "target_spread_bps": 50
     }
