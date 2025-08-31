@@ -24,7 +24,7 @@ class MarketMaker:
         self.buy_lock = asyncio.Lock()
         self.sell_lock = asyncio.Lock()
         self.tick_size = 0.000001
-        self.order_quantity = 0.4
+        self.order_quantity = 16
         self.pnl_tracker = PnLTracker()
         self.last_pnl_print = time.time()
 
